@@ -1,16 +1,36 @@
 package main
 
 import "fmt"
+//1. 定义结构
 
-func main() {
-	fmt.Printf("hello")
-	total:=0.0
-	blockIntever:=21 //单位是w
-	currentReward:=50.0
-	for currentReward>0{
-		amount1:=float64(blockIntever) * currentReward
-		currentReward*=0.5
-		total+=amount1
+type Block struct{
+	//i. 前区块哈希
+	PrevHash []byte
+	Hash []byte
+	Data []byte
+	//ii. 当前区块哈希
+	//iii. 数据
+}
+
+//2. 创建区块
+
+func NewBlock(data string,prevBlockHash []byte) *Block{
+	block :=Block{
+		PrevHash: prevBlockHash,
+		Hash: []byte{}, //TODO:Hash计算
+		Data: []byte(data),
 	}
-	fmt.Println(total)
+	return &block
+}
+
+//3. ⽣成哈希
+//4. 引⼊区块链
+//5. 添加区块
+//6. 重构代码
+func main() {
+	block:=NewBlock("老师转班长一枚比特币！",[]byte{})
+	fmt.Printf("前区块哈希值:%x\n",block.PrevHash)
+	fmt.Printf("当前区块哈希值:%x\n",block.Hash)
+	fmt.Printf("区块数据:  %s\n",block.Data)
+
 }

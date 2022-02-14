@@ -54,12 +54,20 @@ func NewBlockchain() *Blockchain {
 
 //创世块
 func GenesisBlock() *Block{
-	return NewBlock("创世块",[]byte{})
+	return NewBlock("这个是创世块",[]byte{})
 }
 //6. 添加区块
+func (bc *Blockchain)AddBlock(data string){
+	prevHash:=bc.blocks[len(bc.blocks)-1].PrevHash
+	//a.创建新的区块
+	block:=NewBlock(data,prevHash)
+	//b.添加到区块链数组中
+	bc.blocks=append(bc.blocks,block)
+}
 //7. 重构代码
 func main() {
 	blockchain:=NewBlockchain()
+	blockchain.AddBlock("我爱蒋林志")
 	for i,block:=range blockchain.blocks{
 		fmt.Printf("=========当前区块高度:  %d===============\n", i)
 		fmt.Printf("前区块哈希值:%x\n", block.PrevHash)

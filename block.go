@@ -56,14 +56,27 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 func (block *Block) SetHash() {
 	var blockInfo []byte
 	//1.拼装数据
-	blockInfo = append(blockInfo, Uint64ToByte(block.Version)...)
+/*	blockInfo = append(blockInfo, Uint64ToByte(block.Version)...)
 	blockInfo = append(blockInfo, block.PrevHash...)
 	blockInfo = append(blockInfo, block.MerkleRoot...)
 	blockInfo = append(blockInfo, Uint64ToByte(block.TimeStamp)...)
 	blockInfo = append(blockInfo, Uint64ToByte(block.Diffculty)...)
 	blockInfo = append(blockInfo, Uint64ToByte(block.Nonce)...)
 	blockInfo = append(blockInfo, block.Hash...)
-	blockInfo = append(blockInfo,block.Data...)
+	blockInfo = append(blockInfo,block.Data...)*/
+
+	tmp:=[][]byte{
+		Uint64ToByte(block.Version),
+		block.PrevHash,
+		block.MerkleRoot,
+		Uint64ToByte(block.TimeStamp),
+		Uint64ToByte(block.Diffculty),
+		Uint64ToByte(block.Nonce),
+		block.Hash,
+		block.Data,
+	}
+	blockInfo=bytes.Join(tmp,[]byte{})
+
 
 
 	//2.sha256

@@ -49,6 +49,11 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 		Data:     []byte(data),
 	}
 	block.SetHash()
+	//pow:=NewProofOfWork(&block)
+	//hash,nonce:=pow.Run()
+	//查找目标随机数，不停的进行哈希运算
+	//block.Hash=hash
+	//block.Nonce=nonce
 	return &block
 }
 

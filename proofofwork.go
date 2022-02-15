@@ -25,6 +25,10 @@ func NewProofOfWork(block *Block)*ProofOfWork{
 	return &pow
 }
 //3. 提供计算不断计算hash的哈数
+func (pow *ProofOfWork)Run()([]byte,uint64){
+	//TODO
+	return []byte("helloWorld"),10
+}
 //Run()
 //4. 提供⼀个校验函数
 //IsValid()

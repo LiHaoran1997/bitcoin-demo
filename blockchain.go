@@ -1,4 +1,5 @@
 package main
+
 type Blockchain struct {
 	//定义一个区块链数组
 	blocks []*Block
@@ -19,7 +20,7 @@ func GenesisBlock() *Block{
 }
 //6. 添加区块
 func (bc *Blockchain)AddBlock(data string){
-	prevHash:=bc.blocks[len(bc.blocks)-1].PrevHash
+	prevHash:=bc.blocks[len(bc.blocks)-1].Hash
 	//a.创建新的区块
 	block:=NewBlock(data,prevHash)
 	//b.添加到区块链数组中

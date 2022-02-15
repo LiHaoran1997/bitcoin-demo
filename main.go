@@ -16,6 +16,7 @@ import (
 func main() {
 	blockchain:=NewBlockchain()
 	blockchain.AddBlock("我爱蒋林志")
+	blockchain.AddBlock("蒋林志是🐷 ")
 	for i,block:=range blockchain.blocks{
 		fmt.Printf("=========当前区块高度:  %d===============\n", i)
 		fmt.Printf("前区块哈希值:%x\n", block.PrevHash)

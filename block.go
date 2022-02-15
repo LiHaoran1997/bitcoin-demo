@@ -48,12 +48,12 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 		Hash:     []byte{},
 		Data:     []byte(data),
 	}
-	block.SetHash()
-	//pow:=NewProofOfWork(&block)
-	//hash,nonce:=pow.Run()
+	//block.SetHash()
+	pow:=NewProofOfWork(&block)
+	hash,nonce:=pow.Run()
 	//查找目标随机数，不停的进行哈希运算
-	//block.Hash=hash
-	//block.Nonce=nonce
+	block.Hash=hash
+	block.Nonce=nonce
 	return &block
 }
 

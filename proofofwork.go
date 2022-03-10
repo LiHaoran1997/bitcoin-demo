@@ -34,6 +34,7 @@ func (pow *ProofOfWork)Run()([]byte,uint64){
 	var nonce uint64
 	block:=pow.block
 	var hash [32]byte
+	fmt.Println("开始挖矿....")
 	for{
 		//1.拼装数据（区块数据，不断变化随机数）
 		tmp:=[][]byte{

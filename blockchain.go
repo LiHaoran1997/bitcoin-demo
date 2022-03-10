@@ -12,9 +12,10 @@ type Blockchain struct {
 	tail []byte
 }
 
-const blockChainDb="blockChain.db"
-const blockBucket="blockBucket"
-const last="LastHashKey"
+const blockChainDb = "blockChain.db"
+const blockBucket = "blockBucket"
+const last = "LastHashKey"
+
 //5.定义一个区块链
 func NewBlockchain() *Blockchain {
 	var lastHash []byte
@@ -44,7 +45,8 @@ func NewBlockchain() *Blockchain {
 				os.Exit(1)
 			}
 			//创建一个创世块，并作为第一个区块添加到区块链中
-			genesisBlock:=GenesisBlock()
+			genesisBlock := GenesisBlock()
+
 			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			//TODO
 			bucket.Put([]byte(last), genesisBlock.Hash)
@@ -62,30 +64,31 @@ func NewBlockchain() *Blockchain {
 }
 
 //创世块
-func GenesisBlock() *Block{
-	return NewBlock("这个是创世块",[]byte{})
+func GenesisBlock() *Block {
+	return NewBlock("这个是创世块", []byte{})
 }
+
 //6. 添加区块
-func (bc *Blockchain)AddBlock(data string){
-/*	prevHash:=bc.blocks[len(bc.blocks)-1].Hash
-	//a.创建新的区块
-	block:=NewBlock(data,prevHash)
-	//b.添加到区块链数组中
-	bc.blocks=append(bc.blocks,block)*/
-	lastBlockHash:=bc.tail
-	newBlock:=NewBlock(data,lastBlockHash)
+func (bc *Blockchain) AddBlock(data string) {
+	/*	prevHash:=bc.blocks[len(bc.blocks)-1].Hash
+		//a.创建新的区块
+		block:=NewBlock(data,prevHash)
+		//b.添加到区块链数组中
+		bc.blocks=append(bc.blocks,block)*/
+	lastBlockHash := bc.tail
+	newBlock := NewBlock(data, lastBlockHash)
+
 	bc.db.Update(func(tx *bolt.Tx) error {
-		bucket:=tx.Bucket([]byte(blockBucket))
-		if bucket==nil{
+		bucket := tx.Bucket([]byte(blockBucket))
+		if bucket == nil {
 			fmt.Println("未找到区块链Bucket！！！")
-		}else{
+		} else {
 			//添加区块
 			bucket.Put(newBlock.Hash, newBlock.Serialize())
 			bucket.Put([]byte(last), newBlock.Hash)
-			bc.tail=newBlock.Hash
+			bc.tail = newBlock.Hash
 		}
 		return nil
 	})
-
-
 }
+

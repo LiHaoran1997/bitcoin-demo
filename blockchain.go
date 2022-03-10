@@ -14,6 +14,7 @@ type Blockchain struct {
 
 const blockChainDb="blockChain.db"
 const blockBucket="blockBucket"
+const last="LastHashKey"
 //5.定义一个区块链
 func NewBlockchain() *Blockchain {
 	var lastHash []byte
@@ -44,16 +45,16 @@ func NewBlockchain() *Blockchain {
 			}
 			//创建一个创世块，并作为第一个区块添加到区块链中
 			genesisBlock:=GenesisBlock()
-			bucket.Put(genesisBlock.Hash, genesisBlock.toByte())
+			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			//TODO
-			bucket.Put([]byte("LastHashKey"), genesisBlock.Hash)
+			bucket.Put([]byte(last), genesisBlock.Hash)
 			//这个别忘了， 我们需要返回它
 			lastHash = genesisBlock.Hash
 			return nil
 			//抽屉已经存在， 直接读取即可
 		} else {
 			//获取最后⼀个区块的哈希
-			lastHash = bucket.Get([]byte("LastHashKey"))
+			lastHash = bucket.Get([]byte(last))
 		}
 		return nil
 	})
@@ -71,4 +72,20 @@ func (bc *Blockchain)AddBlock(data string){
 	block:=NewBlock(data,prevHash)
 	//b.添加到区块链数组中
 	bc.blocks=append(bc.blocks,block)*/
+	lastBlockHash:=bc.tail
+	newBlock:=NewBlock(data,lastBlockHash)
+	bc.db.Update(func(tx *bolt.Tx) error {
+		bucket:=tx.Bucket([]byte(blockBucket))
+		if bucket==nil{
+			fmt.Println("未找到区块链Bucket！！！")
+		}else{
+			//添加区块
+			bucket.Put(newBlock.Hash, newBlock.Serialize())
+			bucket.Put([]byte(last), newBlock.Hash)
+			bc.tail=newBlock.Hash
+		}
+		return nil
+	})
+
+
 }

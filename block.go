@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/gob"
+	"fmt"
 	"log"
+	"os"
 	"time"
 )
 
@@ -58,9 +61,6 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 	block.Nonce = nonce
 	return &block
 }
-func (block *Block) toByte() []byte {
-	return []byte{}
-}
 
 //3. ⽣成哈希
 func (block *Block) SetHash() {
@@ -90,4 +90,33 @@ func (block *Block) SetHash() {
 	//2.sha256
 	hash := sha256.Sum256(blockInfo)
 	block.Hash = hash[:]
+}
+
+func (block *Block)Serialize() []byte{
+	//将block数据转换为字节流
+	var buffer bytes.Buffer
+	encoder:=gob.NewEncoder(&buffer)
+	err:=encoder.Encode(&block)
+	if err!=nil{
+		fmt.Println("encode failed!!!",err)
+		os.Exit(1)
+	}
+	return buffer.Bytes()
+}
+
+func Deserialize(data []byte)Block{
+	var block Block
+	var buffer bytes.Buffer
+	_,err:=buffer.Write(data)
+	if err != nil {
+		fmt.Println("buffer.Read failed!", err)
+		os.Exit(1)
+	}
+	decoder:=gob.NewDecoder(&buffer)
+	err=decoder.Decode(&block)
+	if err != nil {
+		fmt.Println("decode failed!", err)
+		os.Exit(1)
+	}
+	return block
 }

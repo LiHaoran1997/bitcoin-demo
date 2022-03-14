@@ -6,7 +6,6 @@ package main
 
 //7. 重构代码
 func main() {
-	blockchain := NewBlockchain()
-	cli:=Cli{blockchain}
+	cli:=Cli{}
 	cli.Run()
 }

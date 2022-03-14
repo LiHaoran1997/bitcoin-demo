@@ -17,7 +17,7 @@ const blockBucket = "blockBucket"
 const last = "LastHashKey"
 
 //5.定义一个区块链
-func NewBlockchain() *Blockchain {
+func NewBlockchain(address string) *Blockchain {
 	var lastHash []byte
 	/*
 	   1. 打开数据库(没有的话就创建)
@@ -29,6 +29,10 @@ func NewBlockchain() *Blockchain {
 	   2. 添加创世块数据
 	   3. 更新"last"这个key的value（创世块的哈希值）
 	*/
+	if dbExists(){
+		fmt.Println("区块链已创建")
+		os.Exit(1)
+	}
 	db, err := bolt.Open(blockChainDb, 0600, nil)
 	if err != nil {
 		fmt.Println("bolt.Open failed!", err)
@@ -48,7 +52,6 @@ func NewBlockchain() *Blockchain {
 			genesisBlock := GenesisBlock()
 
 			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
-			//TODO
 			bucket.Put([]byte(last), genesisBlock.Hash)
 			//这个别忘了， 我们需要返回它
 			lastHash = genesisBlock.Hash
@@ -92,3 +95,32 @@ func (bc *Blockchain) AddBlock(data string) {
 	})
 }
 
+func GetBlockChainObj() *Blockchain{
+	var lastHash []byte
+	if !dbExists(){
+		fmt.Println("区块链未创建，请先创建区块链")
+		os.Exit(1)
+	}
+	db, err := bolt.Open(blockChainDb, 0600, nil)
+	if err != nil {
+		fmt.Println("bolt.Open failed!", err)
+		os.Exit(1)
+	}
+	db.View(func(tx *bolt.Tx) error {
+		bucket:=tx.Bucket([]byte(blockBucket))
+		if bucket==nil{
+			fmt.Println("未找到Bucket")
+			os.Exit(1)
+		}
+		lastHash=bucket.Get([]byte(last))
+		return nil
+	})
+	return &Blockchain{db,lastHash}
+}
+
+func dbExists() bool{
+	if _,err:=os.Stat(blockChainDb);os.IsNotExist(err){
+		return false
+	}
+	return true
+}

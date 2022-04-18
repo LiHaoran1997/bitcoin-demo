@@ -3,88 +3,66 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
-type Cli struct {
+//这是一个用来接收命令行参数并且控制区块链操作的文件
+
+type CLI struct {
+	bc *Blockchain
 }
 
 const Usage = `
-             createBlockChain --address ADDRESS "create a blockchain"
-             addBlock --data DATA "add a block"
-             printChain "print blockchain"`
+	printChain               "正向打印区块链"
+	printChainR              "反向打印区块链"
+	getBalance --address ADDRESS "获取指定地址的余额"
+	send FROM TO AMOUNT MINER DATA "由FROM转AMOUNT给TO，由MINER挖矿，同时写入DATA"
+`
 
-func (cli *Cli) Run() {
-	if len(os.Args) < 2 {
-		fmt.Println(Usage)
-		os.Exit(1)
+//接受参数的动作，我们放到一个函数中
+
+func (cli *CLI) Run() {
+
+	//./block printChain
+	//./block addBlock --data "HelloWorld"
+	//1. 得到所有的命令
+	args := os.Args
+	if len(args) < 2 {
+		fmt.Printf(Usage)
+		return
 	}
-	cmd := os.Args[1]
+
+	//2. 分析命令
+	cmd := args[1]
 	switch cmd {
-	case "createBlockChain":
-		if len(os.Args) > 3 && os.Args[2] == "--address" {
-			address := os.Args[3]
-			if address == "" {
-				fmt.Println("地址为空！")
-				os.Exit(1)
-			}
-			cli.createBlockchain(address)
-		} else {
-			fmt.Println(Usage)
-		}
-	case "addBlock":
-		if len(os.Args) > 3 && os.Args[2] == "--data" {
-			data := os.Args[3]
-			if data == "" {
-				fmt.Println("区块数据不能为空")
-				os.Exit(1)
-			}
-			cli.addBlock(data)
-		} else {
-			fmt.Println(Usage)
-		}
 	case "printChain":
-		cli.printChain()
+		fmt.Printf("正向打印区块\n")
+		cli.PrinBlockChain()
+	case "printChainR":
+		fmt.Printf("反向打印区块\n")
+		cli.PrinBlockChainReverse()
+	case "getBalance":
+		fmt.Printf("获取余额\n")
+		if len(args) == 4 && args[2] == "--address" {
+			address := args[3]
+			cli.GetBalance(address)
+		}
+	case "send":
+		fmt.Printf("转账开始...\n")
+		if len(args) != 7 {
+			fmt.Printf("参数个数错误，请检查！\n")
+			fmt.Printf(Usage)
+			return
+		}
+		//./block send FROM TO AMOUNT MINER DATA "由FROM转AMOUNT给TO，由MINER挖矿，同时写入DATA"
+		from := args[2]
+		to := args[3]
+		amount, _ := strconv.ParseFloat(args[4], 64) //知识点，请注意
+		miner := args[5]
+		data := args[6]
+		cli.Send(from, to, amount, miner, data)
 	default:
-		fmt.Println(Usage)
+		fmt.Printf("无效的命令，请检查!\n")
+		fmt.Printf(Usage)
 	}
-}
-
-func (cli *Cli) addBlock(data string) {
-	bc:=GetBlockChainObj()
-	bc.AddBlock(data)
-	bc.db.Close()
-	fmt.Println("创建区块成功")
-}
-
-func (cli *Cli) printChain() {
-	bc:=GetBlockChainObj()
-	it := NewBlockchainiterator(bc)
-	for {
-		block := it.GetBlockAndMoveLeft()
-		fmt.Println(" ============== =============")
-		fmt.Printf("版本号: %d\n", block.Version)
-		fmt.Printf("前区块哈希值: %x\n", block.PrevHash)
-		fmt.Printf("梅克尔根: %x\n", block.MerkleRoot)
-		fmt.Printf("时间戳: %d\n", block.TimeStamp)
-		fmt.Printf("难度值(随便写的）: %d\n", block.Diffculty)
-		fmt.Printf("随机数 : %d\n", block.Nonce)
-		fmt.Printf("当前区块哈希值: %x\n", block.Hash)
-		fmt.Printf("区块数据 :%s\n", block.Data)
-		if len(block.PrevHash) == 0 {
-			fmt.Println("区块数据遍历结束")
-			break
-		}
-	}
-}
-
-func (cli *Cli) createBlockchain(address string) {
-	bc := NewBlockchain(address)
-	err := bc.db.Close()
-	if err != nil {
-		if dbExists() {
-			os.Remove(blockChainDb)
-		}
-		fmt.Println("创建区块链成功")
-	}
-	fmt.Println("创建区块链成功")
 }

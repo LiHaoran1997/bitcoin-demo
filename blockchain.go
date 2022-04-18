@@ -2,6 +2,7 @@ package main
 
 import (
 	"../bolt"
+	"bytes"
 	"fmt"
 	"os"
 )
@@ -15,6 +16,7 @@ type Blockchain struct {
 const blockChainDb = "blockChain.db"
 const blockBucket = "blockBucket"
 const last = "LastHashKey"
+const genesisInfo="这个是创世块"
 
 //5.定义一个区块链
 func NewBlockchain(address string) *Blockchain {
@@ -29,10 +31,7 @@ func NewBlockchain(address string) *Blockchain {
 	   2. 添加创世块数据
 	   3. 更新"last"这个key的value（创世块的哈希值）
 	*/
-	if dbExists(){
-		fmt.Println("区块链已创建")
-		os.Exit(1)
-	}
+
 	db, err := bolt.Open(blockChainDb, 0600, nil)
 	if err != nil {
 		fmt.Println("bolt.Open failed!", err)
@@ -49,8 +48,8 @@ func NewBlockchain(address string) *Blockchain {
 				os.Exit(1)
 			}
 			//创建一个创世块，并作为第一个区块添加到区块链中
-			genesisBlock := GenesisBlock()
-
+			genesisBlock := GenesisBlock(address)
+			fmt.Printf("genesisBlock :%s\n",genesisBlock)
 			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			bucket.Put([]byte(last), genesisBlock.Hash)
 			//这个别忘了， 我们需要返回它
@@ -67,19 +66,20 @@ func NewBlockchain(address string) *Blockchain {
 }
 
 //创世块
-func GenesisBlock() *Block {
-	return NewBlock("这个是创世块", []byte{})
+func GenesisBlock(address string) *Block {
+	coinbase:=NewCoinbaseTx(address,genesisInfo)
+	return NewBlock([]*Transaction{coinbase}, []byte{})
 }
 
 //6. 添加区块
-func (bc *Blockchain) AddBlock(data string) {
+func (bc *Blockchain) AddBlock(txs []*Transaction) {
 	/*	prevHash:=bc.blocks[len(bc.blocks)-1].Hash
 		//a.创建新的区块
 		block:=NewBlock(data,prevHash)
 		//b.添加到区块链数组中
 		bc.blocks=append(bc.blocks,block)*/
 	lastBlockHash := bc.tail
-	newBlock := NewBlock(data, lastBlockHash)
+	newBlock := NewBlock(txs, lastBlockHash)
 
 	bc.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(blockBucket))
@@ -123,4 +123,41 @@ func dbExists() bool{
 		return false
 	}
 	return true
+}
+
+func (bc *Blockchain) Printchain() {
+
+	blockHeight := 0
+	bc.db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("blockBucket"))
+
+		//从第一个key-> value 进行遍历，到最后一个固定的key时直接返回
+		b.ForEach(func(k, v []byte) error {
+			if bytes.Equal(k, []byte("LastHashKey")) {
+				return nil
+			}
+
+			block := Deserialize(v)
+			//fmt.Printf("key=%x, value=%s\n", k, v)
+			fmt.Printf("=============== 区块高度: %d ==============\n", blockHeight)
+			blockHeight++
+			fmt.Printf("版本号: %d\n", block.Version)
+			fmt.Printf("前区块哈希值: %x\n", block.PrevHash)
+			fmt.Printf("梅克尔根: %x\n", block.MerkleRoot)
+			fmt.Printf("时间戳: %d\n", block.TimeStamp)
+			fmt.Printf("难度值(随便写的）: %d\n", block.Diffculty)
+			fmt.Printf("随机数 : %d\n", block.Nonce)
+			fmt.Printf("当前区块哈希值: %x\n", block.Hash)
+			fmt.Printf("区块数据 :%s\n", block.Transactions[0].TXInput[0].Sig)
+			return nil
+		})
+		return nil
+	})
+}
+
+func (bc *Blockchain)FindUTXOs(address string)[]TXOutput{
+	var UTXO []TXOutput
+	//TODO
+	return UTXO
 }

@@ -44,8 +44,7 @@ func (pow *ProofOfWork)Run()([]byte,uint64){
 			Uint64ToByte(block.TimeStamp),
 			Uint64ToByte(block.Diffculty),
 			Uint64ToByte(nonce),
-			block.Hash,
-			block.Data,
+			//只对区块头做哈希，区块体通过root影响数据
 		}
 		blockInfo:=bytes.Join(tmp,[]byte{})
 		//2.哈希运算

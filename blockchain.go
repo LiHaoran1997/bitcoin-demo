@@ -16,7 +16,7 @@ type Blockchain struct {
 const blockChainDb = "blockChain.db"
 const blockBucket = "blockBucket"
 const last = "LastHashKey"
-const genesisInfo="这个是创世块"
+const genesisInfo = "这个是创世块"
 
 //5.定义一个区块链
 func NewBlockchain(address string) *Blockchain {
@@ -49,7 +49,7 @@ func NewBlockchain(address string) *Blockchain {
 			}
 			//创建一个创世块，并作为第一个区块添加到区块链中
 			genesisBlock := GenesisBlock(address)
-			fmt.Printf("genesisBlock :%s\n",genesisBlock)
+			fmt.Printf("genesisBlock :%s\n", genesisBlock)
 			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			bucket.Put([]byte(last), genesisBlock.Hash)
 			//这个别忘了， 我们需要返回它
@@ -67,7 +67,7 @@ func NewBlockchain(address string) *Blockchain {
 
 //创世块
 func GenesisBlock(address string) *Block {
-	coinbase:=NewCoinbaseTx(address,genesisInfo)
+	coinbase := NewCoinbaseTx(address, genesisInfo)
 	return NewBlock([]*Transaction{coinbase}, []byte{})
 }
 
@@ -95,9 +95,9 @@ func (bc *Blockchain) AddBlock(txs []*Transaction) {
 	})
 }
 
-func GetBlockChainObj() *Blockchain{
+func GetBlockChainObj() *Blockchain {
 	var lastHash []byte
-	if !dbExists(){
+	if !dbExists() {
 		fmt.Println("区块链未创建，请先创建区块链")
 		os.Exit(1)
 	}
@@ -107,19 +107,19 @@ func GetBlockChainObj() *Blockchain{
 		os.Exit(1)
 	}
 	db.View(func(tx *bolt.Tx) error {
-		bucket:=tx.Bucket([]byte(blockBucket))
-		if bucket==nil{
+		bucket := tx.Bucket([]byte(blockBucket))
+		if bucket == nil {
 			fmt.Println("未找到Bucket")
 			os.Exit(1)
 		}
-		lastHash=bucket.Get([]byte(last))
+		lastHash = bucket.Get([]byte(last))
 		return nil
 	})
-	return &Blockchain{db,lastHash}
+	return &Blockchain{db, lastHash}
 }
 
-func dbExists() bool{
-	if _,err:=os.Stat(blockChainDb);os.IsNotExist(err){
+func dbExists() bool {
+	if _, err := os.Stat(blockChainDb); os.IsNotExist(err) {
 		return false
 	}
 	return true
@@ -156,8 +156,42 @@ func (bc *Blockchain) Printchain() {
 	})
 }
 
-func (bc *Blockchain)FindUTXOs(address string)[]TXOutput{
+func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 	var UTXO []TXOutput
-	//TODO
+	//定义map保存消费过的output，key为output所在id，value这个交易索引数组
+	//map[交易id][]uint64
+	spentOutPuts := make(map[string][]int64)
+	//1.遍历区块
+	//创建迭代器
+	it := bc.NewIterator()
+	for {
+		block := it.Next()
+		//2.遍历交易
+		for _, tx := range block.Transactions {
+			fmt.Printf("current txid: %x\n", tx.TXID)
+			//3.遍历output,找到与自己相关相关的utxo（在添加output之前检查下是否消耗过）
+			for i, output := range tx.TXOutPut {
+				//这个output和我们目标地址相同，满足条件，加入到返回utxo数组中
+				if output.PubKeyHash == address {
+					fmt.Printf("current index: %d\n", i)
+					UTXO = append(UTXO, output)
+				}
+			}
+			//4.遍历input,找到花费过的utxo集合（把自己消耗过的标识出来）
+			for _, input := range tx.TXInput {
+				//判断当前input和目标是否一致，如果相同，说明是消耗过的
+				if input.Sig == address {
+					indexArray := spentOutPuts[string(input.TXid)]
+					indexArray = append(indexArray, input.Index)
+
+
+				}
+			}
+		}
+		if len(block.PrevHash) == 0 {
+			break
+			fmt.Printf("区块遍历完成退出！")
+		}
+	}
 	return UTXO
 }

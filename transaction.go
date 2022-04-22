@@ -56,5 +56,17 @@ func NewCoinbaseTx(address string, data string) *Transaction {
 	tx.SetHash()
 	return &tx
 }
+func (tx *Transaction) IsCoinbase() bool {
+	//1.交易input只有一个
+	//2.交易ID为空
+	//3.交易Index为-1
+	if len(tx.TXInput) == 1 {
+		input := tx.TXInput[0]
+		if bytes.Equal(tx.TXInput[0].TXid, []byte{}) && input.Index == -1 {
+			return true
+		}
+	}
+	return false
+}
 
 //3.创建挖矿交易

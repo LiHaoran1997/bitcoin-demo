@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"fmt"
 	"log"
 )
 
@@ -45,7 +46,7 @@ func (tx *Transaction) SetHash() {
 	tx.TXID = hash[:]
 }
 
-//2.提供创建交易方法
+//2.创建挖矿交易
 func NewCoinbaseTx(address string, data string) *Transaction {
 	//挖矿交易的特点：只有一个input，无需引用交易id，无需饮用index
 	//矿工由于挖矿时无需指定签名，所以这个字段可以由矿工自由填写数据，一般填写矿池名字
@@ -69,4 +70,35 @@ func (tx *Transaction) IsCoinbase() bool {
 	return false
 }
 
-//3.创建挖矿交易
+//创建普通转账交易
+//1.找到最合理的UTXO集合 map[string][]uint64
+//2.将这些UTXO逐一转为inputs
+//3.创建inputs、outputs
+//4.如果有零钱，要找零
+func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Transaction {
+	//1.找到最合理的UTXO集合 map[string][]uint64
+	utxos, resValue := bc.FindNeedUTXOs(from, amount)
+	if resValue < amount {
+		fmt.Printf("余额不足，交易失败！")
+		return nil
+	}
+	var inputs []TXInput
+	var outputs []TXOutput
+	//2.将这些UTXO逐一转为inputs
+	for id, indexArray := range utxos {
+		for _, i := range indexArray {
+			input := TXInput{[]byte(id), int64(i), from}
+			inputs = append(inputs, input)
+		}
+	}
+	//创建交易输出
+	output := TXOutput{amount, to}
+	outputs = append(outputs, output)
+	if resValue > amount {
+		//找零
+		outputs = append(outputs, TXOutput{resValue - amount, from})
+	}
+	tx := Transaction{[]byte{}, inputs, outputs}
+	tx.SetHash()
+	return &tx
+}

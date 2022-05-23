@@ -8,6 +8,8 @@ import (
 	"log"
 )
 
+const reward = 50
+
 //1.定义交易结构
 type Transaction struct {
 	TXID     []byte
@@ -30,8 +32,6 @@ type TXOutput struct {
 	//锁定脚本Hash值
 	PubKeyHash string
 }
-
-const reward = 12.5
 
 //设置交易ID
 func (tx *Transaction) SetHash() {

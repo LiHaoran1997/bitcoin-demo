@@ -60,7 +60,7 @@ func (cli *CLI) Send(from, to string, amount float64, miner, data string) {
 	fmt.Printf("data : %s\n", data)
 	//具体的逻辑，TODO
 
-/*	//1. 创建挖矿交易
+	//1. 创建挖矿交易
 	coinbase := NewCoinbaseTx(miner, data)
 	//2. 创建一个普通交易
 	tx := NewTransaction(from, to, amount, cli.bc)
@@ -71,5 +71,5 @@ func (cli *CLI) Send(from, to string, amount float64, miner, data string) {
 	//3. 添加到区块
 
 	cli.bc.AddBlock([]*Transaction{coinbase, tx})
-	fmt.Printf("转账成功！")*/
+	fmt.Printf("转账成功！")
 }

@@ -49,7 +49,7 @@ func NewBlockchain(address string) *Blockchain {
 			}
 			//创建一个创世块，并作为第一个区块添加到区块链中
 			genesisBlock := GenesisBlock(address)
-			fmt.Printf("genesisBlock :%s\n", genesisBlock)
+			//fmt.Printf("genesisBlock :%s\n", genesisBlock)
 			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			bucket.Put([]byte(last), genesisBlock.Hash)
 			//这个别忘了， 我们需要返回它
@@ -168,7 +168,6 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 		block := it.Next()
 		//2.遍历交易
 		for _, tx := range block.Transactions {
-			fmt.Printf("current txid: %x\n", tx.TXID)
 			//3.遍历output,找到与自己相关相关的utxo（在添加output之前检查下是否消耗过）
 		OUTPUT:
 			for i, output := range tx.TXOutPut {
@@ -185,7 +184,7 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 					}
 				}
 				if output.PubKeyHash == address {
-					fmt.Printf("current index: %d\n", i)
+					//fmt.Printf("current index: %d\n", i)
 					UTXO = append(UTXO, output)
 				}
 			}
@@ -195,13 +194,11 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 				for _, input := range tx.TXInput {
 					//判断当前input和目标是否一致，如果相同，说明是消耗过的
 					if input.Sig == address {
-						indexArray := spentOutPuts[string(input.TXid)]
-						indexArray = append(indexArray, input.Index)
-
+						spentOutPuts[string(input.TXid)] = append(spentOutPuts[string(input.TXid)], input.Index)
 					}
 				}
 			}else{
-				fmt.Printf("这是coinbase交易，不需要遍历input!\n")
+				//fmt.Printf("这是coinbase交易，不需要遍历input!\n")
 			}
 		}
 		if len(block.PrevHash) == 0 {
@@ -271,8 +268,9 @@ func (bc *Blockchain) FindNeedUTXOs(from string, amount float64) (map[string][]u
 				for _, input := range tx.TXInput {
 					//判断当前input和目标是否一致，如果相同，说明是消耗过的
 					if input.Sig == from {
-						indexArray := spentOutPuts[string(input.TXid)]
-						indexArray = append(indexArray, input.Index)
+						//indexArray := spentOutPuts[string(input.TXid)]
+						//indexArray = append(indexArray, input.Index)
+						spentOutPuts[string(input.TXid)] = append(spentOutPuts[string(input.TXid)], input.Index)
 
 					}
 				}

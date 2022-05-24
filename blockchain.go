@@ -158,6 +158,52 @@ func (bc *Blockchain) Printchain() {
 
 func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 	var UTXO []TXOutput
+
+	txs := bc.FindUTXOTransactions(address)
+	for _, tx := range txs {
+		for _, output := range tx.TXOutPut {
+			if address == output.PubKeyHash {
+				UTXO = append(UTXO, output)
+			}
+		}
+	}
+	return UTXO
+}
+
+func (bc *Blockchain) FindNeedUTXOs(from string, amount float64) (map[string][]uint64, float64) {
+	//找到的合理的utxos集合
+	utxos := make(map[string][]uint64)
+	var calc float64
+
+	txs := bc.FindUTXOTransactions(from)
+	for _, tx := range txs {
+		for i, output := range tx.TXOutPut {
+			if from == output.PubKeyHash {
+				if calc < amount {
+					//1.把UTXO加进来
+					utxos[string(tx.TXID)] = append(utxos[string(tx.TXID)], uint64(i))
+					//2.统计当前总额
+					calc += output.Value
+					//3.比较是否满足转账需求
+					if calc >= amount {
+						fmt.Printf("找到了满足条件的金额:%f\n", calc)
+						return utxos, calc
+					}
+					//a.满足直接返回 utxos,calc
+					//b.不满足，继续统计
+					//统计当前的
+				} else {
+					fmt.Printf("不满足转账金额，当前总额:%f\n，目标金额：%f\n", calc, amount)
+				}
+			}
+		}
+	}
+	return utxos, calc
+
+}
+
+func (bc *Blockchain) FindUTXOTransactions(address string) []*Transaction {
+	var txs []*Transaction //存储所有包含UTXO的交易
 	//定义map保存消费过的output，key为output所在id，value这个交易索引数组
 	//map[交易id][]uint64
 	spentOutPuts := make(map[string][]int64)
@@ -184,8 +230,8 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 					}
 				}
 				if output.PubKeyHash == address {
-					//fmt.Printf("current index: %d\n", i)
-					UTXO = append(UTXO, output)
+					//返回所有相关的交易
+					txs = append(txs, tx)
 				}
 			}
 			//如果当前交易是挖矿交易，不做遍历，直接跳过
@@ -197,7 +243,7 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 						spentOutPuts[string(input.TXid)] = append(spentOutPuts[string(input.TXid)], input.Index)
 					}
 				}
-			}else{
+			} else {
 				//fmt.Printf("这是coinbase交易，不需要遍历input!\n")
 			}
 		}
@@ -206,82 +252,5 @@ func (bc *Blockchain) FindUTXOs(address string) []TXOutput {
 			fmt.Printf("区块遍历完成退出！")
 		}
 	}
-	return UTXO
-}
-
-func (bc *Blockchain) FindNeedUTXOs(from string, amount float64) (map[string][]uint64,float64){
-	//找到的合理的utxos集合
-	utxos:=make(map[string][]uint64)
-	//找到的utxos包含的钱总数
-	var calc float64
-	//已经消耗过的UTXO
-	spentOutPuts := make(map[string][]int64)
-
-	//TODO
-	//创建迭代器
-	it := bc.NewIterator()
-	for {
-		block := it.Next()
-		//2.遍历交易
-		for _, tx := range block.Transactions {
-			fmt.Printf("current txid: %x\n", tx.TXID)
-			//3.遍历output,找到与自己相关相关的utxo（在添加output之前检查下是否消耗过）
-		OUTPUT:
-			for i, output := range tx.TXOutPut {
-				//这个output和我们目标地址相同，满足条件，加入到返回utxo数组中
-				//做一次过滤，将所有消耗过的outputs和当前所添加的output对比一下
-				//如果当前的被消耗，则跳过，否则添加
-				//如果当前交易id已经存在于map，则说明交易中有消耗过的
-				if spentOutPuts[string(tx.TXID)] != nil {
-					for _, j := range spentOutPuts[string(tx.TXID)] {
-						if int64(i) == j {
-							//当前准备添加的output已经消耗过了，不用再加了
-							continue OUTPUT
-						}
-					}
-				}
-				if output.PubKeyHash == from {
-					fmt.Printf("current index: %d\n", i)
-					//UTXO = append(UTXO, output)
-					//TODO:
-					if calc<amount{
-						//1.把UTXO加进来
-						utxos[string(tx.TXID)]=append(utxos[string(tx.TXID)],uint64(i))
-						//2.统计当前总额
-						calc+=output.Value
-						//3.比较是否满足转账需求
-						if calc >=amount{
-							fmt.Printf("找到了满足条件的金额:%f\n",calc)
-							return utxos,calc
-						}
-						//a.满足直接返回 utxos,calc
-						//b.不满足，继续统计
-						//统计当前的
-					}else{
-						fmt.Printf("不满足转账金额，当前总额:%f\n，目标金额：%f\n",calc,amount)
-					}
-				}
-			}
-			//如果当前交易是挖矿交易，不做遍历，直接跳过
-			if !tx.IsCoinbase() {
-				//4.遍历input,找到花费过的utxo集合（把自己消耗过的标识出来）
-				for _, input := range tx.TXInput {
-					//判断当前input和目标是否一致，如果相同，说明是消耗过的
-					if input.Sig == from {
-						//indexArray := spentOutPuts[string(input.TXid)]
-						//indexArray = append(indexArray, input.Index)
-						spentOutPuts[string(input.TXid)] = append(spentOutPuts[string(input.TXid)], input.Index)
-
-					}
-				}
-			}else{
-				fmt.Printf("这是coinbase交易，不需要遍历input!\n")
-			}
-		}
-		if len(block.PrevHash) == 0 {
-			break
-			fmt.Printf("区块遍历完成退出！")
-		}
-	}
-	return utxos,calc
+	return txs
 }

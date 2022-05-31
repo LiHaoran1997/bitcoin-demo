@@ -16,17 +16,15 @@ type Wallets struct {
 
 //创建方法
 func NewWallets() *Wallets {
-	var ws Wallets
 	//ws.WalletsMap = make(map[string]*Wallet)
-
-	//ws := loadFile()
+	var ws Wallets
+	ws.loadFile()
 	return &ws
 }
 
 func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := wallet.NewAddress()
-	ws.WalletsMap = make(map[string]*Wallet)
 	ws.WalletsMap[address] = wallet
 	ws.saveToFile()
 	return address
@@ -37,11 +35,29 @@ func (ws *Wallets) saveToFile() {
 	var buffer bytes.Buffer
 	gob.Register(elliptic.P256())
 	encoder := gob.NewEncoder(&buffer)
-	err:=encoder.Encode(&ws)
-	if err!=nil{
+	err := encoder.Encode(&ws)
+	if err != nil {
 		log.Panic(err)
 	}
 	ioutil.WriteFile("wallet.dat", buffer.Bytes(), 0600)
 }
 
 //读取文件方法，把所有的wallet读出来
+func (ws *Wallets) loadFile() {
+	//读取内容
+	content, err := ioutil.ReadFile("wallet.dat")
+	if err != nil {
+		log.Panic(err)
+	}
+	gob.Register(elliptic.P256())
+	decoder := gob.NewDecoder(bytes.NewReader(content))
+	var wsLocal Wallets
+	err = decoder.Decode(&wsLocal)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	//对于结构来说，里面有map的，要指定赋值，不要在外面赋值
+	ws.WalletsMap=wsLocal.WalletsMap
+
+}

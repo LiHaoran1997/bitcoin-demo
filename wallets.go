@@ -59,5 +59,13 @@ func (ws *Wallets) loadFile() {
 
 	//对于结构来说，里面有map的，要指定赋值，不要在外面赋值
 	ws.WalletsMap=wsLocal.WalletsMap
+}
 
+func (ws *Wallets)ListAllAddresses()[]string{
+	var addresses []string
+	//遍历所有钱包
+	for address:=range ws.WalletsMap{
+		addresses=append(addresses, address)
+	}
+	return addresses
 }

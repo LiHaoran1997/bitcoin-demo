@@ -6,7 +6,9 @@ import (
 	"encoding/gob"
 	"io/ioutil"
 	"log"
+	"os"
 )
+const walletFile="wallet.dat"
 
 //定义一个Wallets结构，保存所有的wallet和地址
 type Wallets struct {
@@ -39,13 +41,19 @@ func (ws *Wallets) saveToFile() {
 	if err != nil {
 		log.Panic(err)
 	}
-	ioutil.WriteFile("wallet.dat", buffer.Bytes(), 0600)
+	ioutil.WriteFile(walletFile, buffer.Bytes(), 0600)
 }
 
 //读取文件方法，把所有的wallet读出来
 func (ws *Wallets) loadFile() {
+	//读取前，先确认文件是否存在，如果不存在，直接退出，否则继续
+	_,err:=os.Stat(walletFile)
+	if os.IsNotExist(err){
+		ws.WalletsMap=make(map[string]*Wallet)
+		return
+	}
 	//读取内容
-	content, err := ioutil.ReadFile("wallet.dat")
+	content, err := ioutil.ReadFile(walletFile)
 	if err != nil {
 		log.Panic(err)
 	}

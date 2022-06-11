@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"log"
 )
 
@@ -23,14 +24,37 @@ type TXInput struct {
 	//2.引用Output索引值
 	Index int64
 	//3.解锁脚本，用地址模拟
-	Sig string
+	//Sig string
+	//数字签名,由R和S拼成的
+	Signature []byte
+	//这里PubKey不存储原始公钥，存储X和Y拼接字符串，在校验端重新拆分（参考rs）
+	PubKey []byte
+}
+
+//由于现在存储的字段是地址的公钥哈希，所以无法直接创建TXOutput
+//为了能够得到公钥哈希，需要处理一下，写一个Lock函数
+func (output *TXOutput) Lock(address string) {
+	//1.解码
+	addressByte := base58.Decode(address)
+	//2.截取出公钥哈希，去除version，去除校验码（4字节）
+	pubKeyHash := addressByte[1 : len(addressByte)-4]
+	//锁定
+	output.PubKeyHash = pubKeyHash
+}
+
+func NewTXOutput(value float64, address string) *TXOutput {
+	output := TXOutput{
+		Value: value,
+	}
+	output.Lock(address)
+	return &output
 }
 
 type TXOutput struct {
 	//接受的金额
 	Value float64
-	//锁定脚本Hash值
-	PubKeyHash string
+	//收款方公钥的哈希
+	PubKeyHash []byte
 }
 
 //设置交易ID
@@ -49,11 +73,12 @@ func (tx *Transaction) SetHash() {
 //2.创建挖矿交易
 func NewCoinbaseTx(address string, data string) *Transaction {
 	//挖矿交易的特点：只有一个input，无需引用交易id，无需饮用index
-	//矿工由于挖矿时无需指定签名，所以这个字段可以由矿工自由填写数据，一般填写矿池名字
-	input := TXInput{[]byte{}, -1, data}
-	output := TXOutput{reward, address}
+	//矿工由于挖矿时无需指定签名，所以PubKey字段可以由矿工自由填写数据，一般填写矿池名字
+	//签名先填写空，创建完整交易后，最后做一次签名即可
+	input := TXInput{[]byte{}, -1, nil, []byte(data)}
+	output := NewTXOutput(reward, address)
 	//对于挖矿交易来说，只有一个input和一个output
-	tx := Transaction{[]byte{}, []TXInput{input}, []TXOutput{output}}
+	tx := Transaction{[]byte{}, []TXInput{input}, []TXOutput{*output}}
 	tx.SetHash()
 	return &tx
 }
@@ -76,8 +101,20 @@ func (tx *Transaction) IsCoinbase() bool {
 //3.创建inputs、outputs
 //4.如果有零钱，要找零
 func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Transaction {
+	//创建交易之后，要进行数字签名，需要私钥，打开钱包，
+	//找到自己的钱包，根据地址返回wallet
+	ws := NewWallets()
+	wallet := ws.WalletsMap[from]
+	if wallet == nil {
+		fmt.Printf("没有找到该地址的钱包，交易创建失败！\n")
+		return nil
+	}
+	//找到对应公私钥
+	pubKey := wallet.publicKey
+	//privateKey:=wallet.PrivateKey
 	//1.找到最合理的UTXO集合 map[string][]uint64
-	utxos, resValue := bc.FindNeedUTXOs(from, amount)
+	pubKeyHash:=HashPubKey(pubKey)
+	utxos, resValue := bc.FindNeedUTXOs(pubKeyHash, amount)
 	if resValue < amount {
 		fmt.Printf("余额不足，交易失败！")
 		return nil
@@ -87,16 +124,18 @@ func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Tra
 	//2.将这些UTXO逐一转为inputs
 	for id, indexArray := range utxos {
 		for _, i := range indexArray {
-			input := TXInput{[]byte(id), int64(i), from}
+			input := TXInput{[]byte(id), int64(i), nil, pubKey}
 			inputs = append(inputs, input)
 		}
 	}
 	//创建交易输出
-	output := TXOutput{amount, to}
-	outputs = append(outputs, output)
+	//output := TXOutput{amount, to}
+	output := NewTXOutput(amount, to)
+	outputs = append(outputs, *output)
 	if resValue > amount {
 		//找零
-		outputs = append(outputs, TXOutput{resValue - amount, from})
+		output=NewTXOutput(resValue-amount,from)
+		outputs = append(outputs, *output)
 	}
 	tx := Transaction{[]byte{}, inputs, outputs}
 	tx.SetHash()

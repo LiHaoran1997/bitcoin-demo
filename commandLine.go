@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 )
-
 //正向打印
 func (cli *CLI) PrinBlockChain() {
 	cli.bc.Printchain()

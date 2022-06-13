@@ -102,13 +102,21 @@ func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Tra
 	ws := NewWallets()
 	wallet := ws.WalletsMap[from]
 	if wallet == nil {
-		fmt.Printf("没有找到该地址的钱包，交易创建失败！\n")
+		fmt.Printf("没有找到该地址的钱包，交易创建失败!\n")
 		return nil
 	}
+
+
+	//if wallet == nil {
+	//	fmt.Printf("没有找到该地址的钱包，交易创建失败！\n")
+	//	return nil
+	//}
 	//找到对应公私钥
-	pubKey := wallet.publicKey
+	pubKey := wallet.PublicKey
 	//privateKey:=wallet.PrivateKey
 	//1.找到最合理的UTXO集合 map[string][]uint64
+	//pubKeyHash := GetPubKeyFromAddress(from)
+
 	pubKeyHash:=HashPubKey(pubKey)
 	utxos, resValue := bc.FindNeedUTXOs(pubKeyHash, amount)
 	if resValue < amount {
@@ -128,6 +136,8 @@ func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Tra
 	//output := TXOutput{amount, to}
 	output := NewTXOutput(amount, to)
 	outputs = append(outputs, *output)
+	fmt.Println(resValue)
+	fmt.Println(amount)
 	if resValue > amount {
 		//找零
 		output=NewTXOutput(resValue-amount,from)

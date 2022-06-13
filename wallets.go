@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/gob"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,11 @@ func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := wallet.NewAddress()
 	ws.WalletsMap[address] = wallet
+	for i,j:=range ws.WalletsMap{
+		fmt.Println(i)
+		fmt.Println(j.PublicKey)
+		fmt.Println(j.PrivateKey)
+	}
 	ws.saveToFile()
 	return address
 }
@@ -64,7 +70,6 @@ func (ws *Wallets) loadFile() {
 	if err != nil {
 		log.Panic(err)
 	}
-
 	//对于结构来说，里面有map的，要指定赋值，不要在外面赋值
 	ws.WalletsMap=wsLocal.WalletsMap
 }

@@ -16,7 +16,7 @@ type Wallet struct {
 	PrivateKey *ecdsa.PrivateKey
 	//PubKey *ecdsa.PublicKey
 	//这里PubKey不存储原始公钥，存储X和Y拼接字符串，在校验端重新拆分（参考rs）
-	publicKey []byte
+	PublicKey []byte
 }
 
 //创建钱包
@@ -36,7 +36,7 @@ func NewWallet() *Wallet {
 
 //生成地址
 func (w *Wallet) NewAddress() string {
-	pubKey := w.publicKey
+	pubKey := w.PublicKey
 	rip160HashValue := HashPubKey(pubKey)
 	//版本
 	version := byte(00)
@@ -77,9 +77,9 @@ func GetPubKeyFromAddress(address string) []byte {
 	//1.解码
 	addressByte := base58.Decode(address)
 	//2.截取出公钥哈希，去除version，去除校验码（4字节）
-	len := len(addressByte)
+	hashLen := len(addressByte)
 
-	pubKeyHash := addressByte[1:len-4]
+	pubKeyHash := addressByte[1:hashLen-4]
 	return pubKeyHash
 }
 

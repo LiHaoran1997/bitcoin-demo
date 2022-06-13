@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"log"
 )
 
@@ -34,12 +33,9 @@ type TXInput struct {
 //由于现在存储的字段是地址的公钥哈希，所以无法直接创建TXOutput
 //为了能够得到公钥哈希，需要处理一下，写一个Lock函数
 func (output *TXOutput) Lock(address string) {
-	//1.解码
-	addressByte := base58.Decode(address)
-	//2.截取出公钥哈希，去除version，去除校验码（4字节）
-	pubKeyHash := addressByte[1 : len(addressByte)-4]
+
 	//锁定
-	output.PubKeyHash = pubKeyHash
+	output.PubKeyHash = GetPubKeyFromAddress(address)
 }
 
 func NewTXOutput(value float64, address string) *TXOutput {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -36,20 +37,20 @@ func NewWallet() *Wallet {
 //生成地址
 func (w *Wallet) NewAddress() string {
 	pubKey := w.publicKey
-	rip160HashValue:=HashPubKey(pubKey)
+	rip160HashValue := HashPubKey(pubKey)
 	//版本
 	version := byte(00)
 	//拼接version
 	payload := append([]byte{version}, rip160HashValue...)
 	//checkSum
-	checkCode:=checkSum(payload)
+	checkCode := checkSum(payload)
 	payload = append(payload, checkCode...)
 	//golang有base58
-	address:= base58.Encode(payload)
+	address := base58.Encode(payload)
 	return address
 }
 
-func HashPubKey(data []byte)[]byte{
+func HashPubKey(data []byte) []byte {
 	hash := sha256.Sum256(data)
 	//编码器
 	rip160hasher := ripemd160.New()
@@ -62,11 +63,35 @@ func HashPubKey(data []byte)[]byte{
 	return rip160HashValue
 }
 
-func checkSum(payload []byte)[]byte{
+func checkSum(payload []byte) []byte {
 	//两次sha256
 	hash1 := sha256.Sum256(payload)
 	hash2 := sha256.Sum256(hash1[:])
 	//前4字节校验码
 	checkCode := hash2[:4]
 	return checkCode
+}
+
+//通过地址返回公钥哈希
+func GetPubKeyFromAddress(address string) []byte {
+	//1.解码
+	addressByte := base58.Decode(address)
+	//2.截取出公钥哈希，去除version，去除校验码（4字节）
+	len := len(addressByte)
+
+	pubKeyHash := addressByte[1:len-4]
+	return pubKeyHash
+}
+
+func IsValidAddress(address string)bool{
+	//1.解码
+	addressByte := base58.Decode(address)
+	//2.截取出公钥哈希，去除version，去除校验码（4字节）
+	payload := addressByte[:len(addressByte)-4]
+	checkSum1:=addressByte[len(addressByte)-4:]
+	checkSum2:=checkSum(payload)
+	//fmt.Println("checkSum1 : %s\n",checkSum1)
+	//fmt.Println("checkSum2 : %s\n",checkSum2)
+	return bytes.Equal(checkSum1,checkSum2)
+
 }

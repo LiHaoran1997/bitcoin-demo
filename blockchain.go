@@ -178,6 +178,7 @@ func (bc *Blockchain) FindNeedUTXOs(senderPubKeyHash []byte, amount float64) (ma
 	var calc float64
 
 	txs := bc.FindUTXOTransactions(senderPubKeyHash)
+	fmt.Println(len(txs))
 	for _, tx := range txs {
 		for i, output := range tx.TXOutPut {
 			if bytes.Equal(senderPubKeyHash, output.PubKeyHash) {

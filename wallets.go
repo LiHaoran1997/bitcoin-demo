@@ -77,3 +77,4 @@ func (ws *Wallets)ListAllAddresses()[]string{
 	}
 	return addresses
 }
+

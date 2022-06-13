@@ -40,15 +40,21 @@ func (cli *CLI) PrinBlockChainReverse() {
 }
 
 func (cli *CLI) GetBalance(address string) {
+	//1.校验地址
+	if !IsValidAddress(address){
+		fmt.Printf("地址无效 : %s\n",address)
+		return
+	}
+	//2.生成公钥哈希
+	pubKeyHash:=GetPubKeyFromAddress(address)
+	utxos := cli.bc.FindUTXOs(pubKeyHash)
 
-	//utxos := cli.bc.FindUTXOs(address)
-	//
-	//total := 0.0
-	//for _, utxo := range utxos {
-	//	total += utxo.Value
-	//}
-	//
-	//fmt.Printf("\"%s\"的余额为：%f\n", address, total)
+	total := 0.0
+	for _, utxo := range utxos {
+		total += utxo.Value
+	}
+
+	fmt.Printf("\"%s\"的余额为：%f\n", address, total)
 }
 
 func (cli *CLI) Send(from, to string, amount float64, miner, data string) {
@@ -57,8 +63,22 @@ func (cli *CLI) Send(from, to string, amount float64, miner, data string) {
 	fmt.Printf("amount : %f\n", amount)
 	fmt.Printf("miner : %s\n", miner)
 	fmt.Printf("data : %s\n", data)
-	//具体的逻辑，TODO
-
+	//具体的逻辑，
+	//1.校验from地址
+	if !IsValidAddress(from){
+		fmt.Printf("地址无效 from: %s",from)
+		return
+	}
+	//2.校验地址
+	if !IsValidAddress(to){
+		fmt.Printf("地址无效 to: %s",to)
+		return
+	}
+	//3.校验miner地址
+	if !IsValidAddress(miner){
+		fmt.Printf("地址无效 : %s",miner)
+		return
+	}
 	//1. 创建挖矿交易
 	coinbase := NewCoinbaseTx(miner, data)
 	//2. 创建一个普通交易

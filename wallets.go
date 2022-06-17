@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/gob"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,11 +28,6 @@ func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := wallet.NewAddress()
 	ws.WalletsMap[address] = wallet
-	for i,j:=range ws.WalletsMap{
-		fmt.Println(i)
-		fmt.Println(j.PublicKey)
-		fmt.Println(j.PrivateKey)
-	}
 	ws.saveToFile()
 	return address
 }

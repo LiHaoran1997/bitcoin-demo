@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
@@ -106,18 +107,16 @@ func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Tra
 		return nil
 	}
 
-
 	//if wallet == nil {
 	//	fmt.Printf("没有找到该地址的钱包，交易创建失败！\n")
 	//	return nil
 	//}
 	//找到对应公私钥
 	pubKey := wallet.PublicKey
-	//privateKey:=wallet.PrivateKey
+	privateKey := wallet.PrivateKey
 	//1.找到最合理的UTXO集合 map[string][]uint64
-	//pubKeyHash := GetPubKeyFromAddress(from)
 
-	pubKeyHash:=HashPubKey(pubKey)
+	pubKeyHash := HashPubKey(pubKey)
 	utxos, resValue := bc.FindNeedUTXOs(pubKeyHash, amount)
 	if resValue < amount {
 		fmt.Printf("余额不足，交易失败！")
@@ -140,10 +139,17 @@ func NewTransaction(from string, to string, amount float64, bc *Blockchain) *Tra
 	fmt.Println(amount)
 	if resValue > amount {
 		//找零
-		output=NewTXOutput(resValue-amount,from)
+		output = NewTXOutput(resValue-amount, from)
 		outputs = append(outputs, *output)
 	}
 	tx := Transaction{[]byte{}, inputs, outputs}
 	tx.SetHash()
+
+	bc.SignTransaction(&tx, privateKey)
 	return &tx
+}
+
+//签名具体逻辑,参数为：私钥、inputs里面所有引用的交易结构map[string]Transaction
+func (tx *Transaction) Sign(privateKey *ecdsa.PrivateKey, prevTXs map[string]Transaction) {
+	//TODO
 }
